@@ -21,6 +21,22 @@ export class DocSanctumSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		const intro = containerEl.createEl('p');
+		intro.appendText('A client for ');
+		intro.createEl('a', {
+			text: 'DocSanctum',
+			href: 'https://github.com/DocSanctum/doc-sanctum',
+		});
+		intro.appendText(
+			' — a self-hosted, MCP-queryable knowledge base. This settings tab only points the plugin at your backend; sources (which folders it can search) are managed in the DocSanctum web app itself.',
+		);
+
+		const prereq = containerEl.createEl('p', { cls: 'setting-item-description' });
+		prereq.createEl('strong', { text: 'Before searching: ' });
+		prereq.appendText(
+			'this vault (or the folder you want searchable) must already be added as a source in the DocSanctum frontend and finish indexing there. The plugin only queries sources that already exist — it does not register or index anything on its own.',
+		);
+
 		new Setting(containerEl)
 			.setName('Server URL')
 			.setDesc(
