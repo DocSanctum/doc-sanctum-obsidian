@@ -1,0 +1,10 @@
+{
+	"id": "doc-sanctum",
+	"name": "DocSanctum",
+	"version": "0.1.0",
+	"minAppVersion": "1.0.0",
+	"description": "Search and browse your DocSanctum knowledge base from Obsidian via MCP.",
+	"author": "Sangchul Lee",
+	"authorUrl": "https://github.com/sangchul1011",
+	"isDesktopOnly": true
+}
