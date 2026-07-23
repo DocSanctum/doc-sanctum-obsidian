@@ -11,7 +11,11 @@ interface ResultItem {
 
 export type SearchMode = 'keyword' | 'semantic';
 
+const DEBOUNCE_MS = 300;
+
 export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
+	private debounceTimer: number | undefined;
+
 	constructor(
 		app: App,
 		private plugin: DocSanctumPlugin,
@@ -23,8 +27,23 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 		);
 	}
 
-	async getSuggestions(query: string): Promise<ResultItem[]> {
-		if (!query.trim()) return [];
+	// Semantic search runs a real embedding + vector query on the backend,
+	// so firing one on every keystroke queues up overlapping requests behind
+	// each other — including, eventually, the read_document call for
+	// whatever the user clicks. Debouncing keeps at most one in flight.
+	getSuggestions(query: string): Promise<ResultItem[]> {
+		if (!query.trim()) return Promise.resolve([]);
+		if (this.debounceTimer !== undefined) {
+			window.clearTimeout(this.debounceTimer);
+		}
+		return new Promise((resolve) => {
+			this.debounceTimer = window.setTimeout(() => {
+				void this.fetchSuggestions(query).then(resolve);
+			}, DEBOUNCE_MS);
+		});
+	}
+
+	private async fetchSuggestions(query: string): Promise<ResultItem[]> {
 		try {
 			if (this.mode === 'semantic') {
 				const { results } = await this.plugin.client.semanticSearchDocuments(query);
