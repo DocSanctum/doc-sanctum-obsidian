@@ -3,11 +3,18 @@ import DocSanctumPlugin from './main';
 
 export interface DocSanctumSettings {
 	serverUrl: string;
+	// undefined means "search every source registered on the server" —
+	// DocSanctum instances can register other local paths besides this
+	// vault, and without a filter their documents show up in search here
+	// too (see the "Source" setting below).
+	sourceId?: string;
 }
 
 export const DEFAULT_SETTINGS: DocSanctumSettings = {
 	serverUrl: 'http://localhost:8000/mcp',
 };
+
+const ALL_SOURCES_OPTION = '';
 
 export class DocSanctumSettingTab extends PluginSettingTab {
 	plugin: DocSanctumPlugin;
@@ -52,6 +59,37 @@ export class DocSanctumSettingTab extends PluginSettingTab {
 						this.plugin.client.setServerUrl(this.plugin.settings.serverUrl);
 					}),
 			);
+
+		new Setting(containerEl)
+			.setName('Source')
+			.setDesc(
+				'Restrict search to a single DocSanctum source (useful if the server also indexes folders outside this vault). Leave as "All sources" to search everything.',
+			)
+			.addDropdown((dropdown) => {
+				dropdown.addOption(ALL_SOURCES_OPTION, 'All sources');
+				dropdown.setValue(this.plugin.settings.sourceId ?? ALL_SOURCES_OPTION);
+				dropdown.onChange((value) => {
+					void (async () => {
+						this.plugin.settings.sourceId =
+							value === ALL_SOURCES_OPTION ? undefined : value;
+						await this.plugin.saveSettings();
+					})();
+				});
+				// Populated asynchronously — the dropdown starts with just
+				// "All sources" and gains real options once the server
+				// answers (or stays that way if it's unreachable).
+				void this.plugin.client
+					.listSources()
+					.then((sources) => {
+						for (const source of sources) {
+							dropdown.addOption(source.id, source.name);
+						}
+						dropdown.setValue(this.plugin.settings.sourceId ?? ALL_SOURCES_OPTION);
+					})
+					.catch(() => {
+						/* leave just "All sources" if unreachable */
+					});
+			});
 
 		new Setting(containerEl)
 			.setName('Test connection')

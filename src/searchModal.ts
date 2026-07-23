@@ -44,9 +44,13 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 	}
 
 	private async fetchSuggestions(query: string): Promise<ResultItem[]> {
+		const sourceId = this.plugin.settings.sourceId;
 		try {
 			if (this.mode === 'semantic') {
-				const { results } = await this.plugin.client.semanticSearchDocuments(query);
+				const { results } = await this.plugin.client.semanticSearchDocuments(
+					query,
+					sourceId,
+				);
 				return results.map((hit) => ({
 					sourceId: hit.source_id,
 					sourceName: hit.source_name,
@@ -54,7 +58,7 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 					snippet: hit.excerpt,
 				}));
 			}
-			const { matches } = await this.plugin.client.searchDocuments(query);
+			const { matches } = await this.plugin.client.searchDocuments(query, sourceId);
 			return matches.map((match) => ({
 				sourceId: match.source_id,
 				sourceName: match.source_name,

@@ -26,6 +26,20 @@ export interface ReadDocumentResult {
 	content: string;
 }
 
+export interface ListedDocument {
+	path: string;
+	name: string;
+	source_id: string;
+	source_name: string;
+	source_type: string;
+	sha: string | null;
+}
+
+export interface SourceInfo {
+	id: string;
+	name: string;
+}
+
 interface McpTextContent {
 	type: 'text';
 	text: string;
@@ -86,8 +100,22 @@ export class DocSanctumClient {
 		}
 	}
 
-	async listDocuments(sourceId?: string): Promise<unknown> {
+	async listDocuments(
+		sourceId?: string,
+	): Promise<{ documents: ListedDocument[]; warnings: unknown[] }> {
 		return this.callTool('list_documents', sourceId ? { source_id: sourceId } : {});
+	}
+
+	// There's no dedicated "list sources" MCP tool, so this derives the
+	// distinct set of registered sources from every document's source_id/
+	// source_name — the only place that information is exposed.
+	async listSources(): Promise<SourceInfo[]> {
+		const { documents } = await this.listDocuments();
+		const byId = new Map<string, string>();
+		for (const doc of documents) {
+			byId.set(doc.source_id, doc.source_name);
+		}
+		return Array.from(byId, ([id, name]) => ({ id, name }));
 	}
 
 	async searchDocuments(
