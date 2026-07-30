@@ -19,11 +19,20 @@ export interface SemanticHit {
 	excerpt: string;
 }
 
+export interface DocSanctumWarning {
+	source_id: string;
+	source_name: string;
+	reason: string;
+	message: string;
+	stale: boolean;
+}
+
 export interface ReadDocumentResult {
 	path: string;
 	source_id: string;
 	source_name: string;
 	content: string;
+	warning?: DocSanctumWarning;
 }
 
 export interface ListedDocument {
@@ -102,7 +111,7 @@ export class DocSanctumClient {
 
 	async listDocuments(
 		sourceId?: string,
-	): Promise<{ documents: ListedDocument[]; warnings: unknown[] }> {
+	): Promise<{ documents: ListedDocument[]; warnings: DocSanctumWarning[] }> {
 		return this.callTool('list_documents', sourceId ? { source_id: sourceId } : {});
 	}
 
@@ -121,7 +130,7 @@ export class DocSanctumClient {
 	async searchDocuments(
 		query: string,
 		sourceId?: string,
-	): Promise<{ query: string; matches: KeywordMatch[]; warnings: unknown[] }> {
+	): Promise<{ query: string; matches: KeywordMatch[]; warnings: DocSanctumWarning[] }> {
 		return this.callTool('search_documents', {
 			query,
 			...(sourceId ? { source_id: sourceId } : {}),
@@ -132,7 +141,7 @@ export class DocSanctumClient {
 		query: string,
 		sourceId?: string,
 		topK?: number,
-	): Promise<{ query: string; results: SemanticHit[]; warnings: unknown[] }> {
+	): Promise<{ query: string; results: SemanticHit[]; warnings: DocSanctumWarning[] }> {
 		return this.callTool('semantic_search_documents', {
 			query,
 			...(sourceId ? { source_id: sourceId } : {}),

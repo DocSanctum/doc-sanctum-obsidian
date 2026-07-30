@@ -1,4 +1,5 @@
 import { App, Component, MarkdownRenderer, Modal } from 'obsidian';
+import { DocSanctumWarning } from './mcpClient';
 
 export class DocumentModal extends Modal {
 	// Modal doesn't itself implement Component, so the rendered markdown's
@@ -11,6 +12,7 @@ export class DocumentModal extends Modal {
 		private sourceName: string,
 		private path: string,
 		private content: string,
+		private warning?: DocSanctumWarning,
 	) {
 		super(app);
 	}
@@ -20,6 +22,14 @@ export class DocumentModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.createEl('h2', { text: `${this.sourceName} / ${this.path}` });
+		if (this.warning) {
+			contentEl.createDiv({
+				cls: 'mod-warning',
+				text: this.warning.stale
+					? `Showing cached content — ${this.warning.message}`
+					: this.warning.message,
+			});
+		}
 		const body = contentEl.createDiv();
 		void MarkdownRenderer.render(
 			this.app,

@@ -1,6 +1,7 @@
 import { App, Notice, SuggestModal } from 'obsidian';
 import DocSanctumPlugin from './main';
 import { DocumentModal } from './documentModal';
+import { DocSanctumWarning } from './mcpClient';
 
 interface ResultItem {
 	sourceId: string;
@@ -15,6 +16,10 @@ const DEBOUNCE_MS = 300;
 
 export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 	private debounceTimer: number | undefined;
+	// Warnings (e.g. a source falling back to stale cached data) apply to a
+	// whole source, not a single query, so once shown once per source+reason
+	// there's no need to repeat it on every keystroke.
+	private readonly notifiedWarnings = new Set<string>();
 
 	constructor(
 		app: App,
@@ -47,10 +52,11 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 		const sourceId = this.plugin.settings.sourceId;
 		try {
 			if (this.mode === 'semantic') {
-				const { results } = await this.plugin.client.semanticSearchDocuments(
+				const { results, warnings } = await this.plugin.client.semanticSearchDocuments(
 					query,
 					sourceId,
 				);
+				this.surfaceWarnings(warnings);
 				return results.map((hit) => ({
 					sourceId: hit.source_id,
 					sourceName: hit.source_name,
@@ -58,7 +64,11 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 					snippet: hit.excerpt,
 				}));
 			}
-			const { matches } = await this.plugin.client.searchDocuments(query, sourceId);
+			const { matches, warnings } = await this.plugin.client.searchDocuments(
+				query,
+				sourceId,
+			);
+			this.surfaceWarnings(warnings);
 			return matches.map((match) => ({
 				sourceId: match.source_id,
 				sourceName: match.source_name,
@@ -68,6 +78,15 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 		} catch (err) {
 			new Notice(`DocSanctum search failed — ${(err as Error).message}`);
 			return [];
+		}
+	}
+
+	private surfaceWarnings(warnings: DocSanctumWarning[]): void {
+		for (const warning of warnings) {
+			const key = `${warning.source_id}:${warning.reason}`;
+			if (this.notifiedWarnings.has(key)) continue;
+			this.notifiedWarnings.add(key);
+			new Notice(`DocSanctum: ${warning.source_name} — ${warning.message}`);
 		}
 	}
 
@@ -83,7 +102,13 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 	private async openDocument(item: ResultItem): Promise<void> {
 		try {
 			const doc = await this.plugin.client.readDocument(item.sourceId, item.path);
-			new DocumentModal(this.app, doc.source_name, doc.path, doc.content).open();
+			new DocumentModal(
+				this.app,
+				doc.source_name,
+				doc.path,
+				doc.content,
+				doc.warning,
+			).open();
 		} catch (err) {
 			new Notice(`DocSanctum: failed to open document — ${(err as Error).message}`);
 		}
