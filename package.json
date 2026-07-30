@@ -1,6 +1,6 @@
 {
 	"name": "doc-sanctum-obsidian",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Search and browse your DocSanctum knowledge base from Obsidian via MCP.",
 	"main": "main.js",
 	"type": "module",
@@ -10,7 +10,12 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint ."
 	},
-	"keywords": ["obsidian", "obsidian-plugin", "mcp", "doc-sanctum"],
+	"keywords": [
+		"obsidian",
+		"obsidian-plugin",
+		"mcp",
+		"doc-sanctum"
+	],
 	"license": "MIT",
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.29.0"
