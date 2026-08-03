@@ -15,13 +15,14 @@ DocSanctum ([github.com/DocSanctum/doc-sanctum](https://github.com/DocSanctum/do
 ## Features
 
 - **Search** command / ribbon icon — keyword search across your DocSanctum sources.
-- **Semantic search** command — natural-language search over indexed content.
+- **Semantic search** command / ribbon icon — natural-language search over indexed content.
 - Selecting a result fetches the full document and renders it in a read-only preview.
-- Settings tab to configure the backend's MCP server URL, with a "Test connection" button.
+- Settings tab to configure the backend's MCP server URL, restrict search to a single source, and test the connection.
+- Surfaces backend warnings (e.g. a source falling back to stale cached data) as in-app notices and, when reading a document, as a banner above the preview.
 
 ## Setup
 
-1. Have a DocSanctum backend running and reachable (default `http://localhost:8000/mcp`). It needs to be recent enough to include the `/mcp` CORS and transport-security fix for external (browser-based) clients — see [DocSanctum#131](https://github.com/DocSanctum/doc-sanctum/pull/131) if `Test connection` fails with a connection error.
+1. Have a DocSanctum backend running and reachable (default `http://localhost:8000/mcp`).
 2. **Add the vault's folder (or whichever folder you want searchable) as a source in the DocSanctum frontend, and let it finish indexing.** This plugin only *queries* sources that already exist in DocSanctum — it can't register or index a folder on its own. Search will simply return nothing until this step is done.
 3. Install this plugin (see below) and set the **Server URL** in the plugin settings if it differs from the default.
 4. Run the **DocSanctum: Search** or **DocSanctum: Semantic search** command (or use the ribbon icon).
