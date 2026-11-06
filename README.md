@@ -17,14 +17,17 @@ DocSanctum ([github.com/DocSanctum/doc-sanctum](https://github.com/DocSanctum/do
 - **Search** command / ribbon icon — keyword search across your DocSanctum sources.
 - **Semantic search** command / ribbon icon — natural-language search over indexed content.
 - Selecting a result fetches the full document and renders it in a read-only preview.
-- Settings tab to configure the backend's MCP server URL, restrict search to a single source, and test the connection.
+- Settings tab to configure the backend's MCP server URL and access token, restrict search to a single source, and test the connection.
 - Surfaces backend warnings (e.g. a source falling back to stale cached data) as in-app notices and, when reading a document, as a banner above the preview.
 
 ## Setup
 
+Requires Obsidian 1.11.4 or later (desktop).
+
 1. Have a DocSanctum backend running and reachable (default `http://localhost:8000/mcp`).
 2. **Add the vault's folder (or whichever folder you want searchable) as a source in the DocSanctum frontend, and let it finish indexing.** This plugin only *queries* sources that already exist in DocSanctum — it can't register or index a folder on its own. Search will simply return nothing until this step is done.
 3. Install this plugin (see below) and set the **Server URL** in the plugin settings if it differs from the default.
+   - **DocSanctum on another machine:** connect through its remote MCP port instead, e.g. `http://192.168.1.20:8020/mcp`, and paste the **Access token** from the DocSanctum web app (Settings → MCP Server → Remote access). Pasting the whole `Authorization: Bearer …` line works too. The token is stored in Obsidian's keychain, not in the vault, so it is not synced along with your notes. A server on the same machine needs no token.
 4. Run the **DocSanctum: Search** or **DocSanctum: Semantic search** command (or use the ribbon icon).
 
 ## Development

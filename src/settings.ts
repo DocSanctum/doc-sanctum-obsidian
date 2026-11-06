@@ -1,5 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import DocSanctumPlugin from './main';
+import { describeConnectionError, normalizeAccessToken } from './mcpClient';
 
 export interface DocSanctumSettings {
 	serverUrl: string;
@@ -56,9 +57,27 @@ export class DocSanctumSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.serverUrl = value.trim();
 						await this.plugin.saveSettings();
-						this.plugin.client.setServerUrl(this.plugin.settings.serverUrl);
+						this.plugin.client.setConnection(
+							this.plugin.settings.serverUrl,
+							this.plugin.getAccessToken(),
+						);
 					}),
 			);
+
+		new Setting(containerEl)
+			.setName('Access token')
+			.setDesc(
+				'Only needed when DocSanctum runs on another machine and you connect through its remote MCP port (e.g. http://192.168.1.20:8020/mcp). Copy it from the DocSanctum web app under Settings → MCP Server → Remote access. Leave empty for a server on this machine.',
+			)
+			.addText((text) => {
+				text.inputEl.type = 'password';
+				text
+					.setPlaceholder('Paste token')
+					.setValue(this.plugin.getAccessToken())
+					.onChange((value) => {
+						this.plugin.setAccessToken(normalizeAccessToken(value));
+					});
+			});
 
 		new Setting(containerEl)
 			.setName('Source')
@@ -100,7 +119,7 @@ export class DocSanctumSettingTab extends PluginSettingTab {
 						await this.plugin.client.listDocuments();
 						new Notice('DocSanctum: connection OK');
 					} catch (err) {
-						new Notice(`DocSanctum: connection failed — ${(err as Error).message}`);
+						new Notice(`DocSanctum: connection failed — ${describeConnectionError(err)}`);
 					}
 				}),
 			);

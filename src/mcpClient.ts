@@ -1,5 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {
+	StreamableHTTPClientTransport,
+	StreamableHTTPError,
+} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 export interface KeywordMatch {
 	path: string;
@@ -74,15 +77,39 @@ function parseToolResult<T>(result: Awaited<ReturnType<Client['callTool']>>): T 
 	return JSON.parse(first.text) as T;
 }
 
+// Accepts a bare token or the whole "Authorization: Bearer <token>" line
+// that the DocSanctum web app's copy button produces.
+export function normalizeAccessToken(raw: string): string {
+	return raw
+		.trim()
+		.replace(/^authorization:\s*/i, '')
+		.replace(/^bearer\s+/i, '')
+		.trim();
+}
+
+// The SDK carries the HTTP status on StreamableHTTPError.code, so a rejected
+// token becomes an actionable message instead of the server's raw JSON body.
+export function describeConnectionError(err: unknown): string {
+	const message = err instanceof Error ? err.message : String(err);
+	if (err instanceof StreamableHTTPError && err.code === 401) {
+		return 'the server rejected the access token. Copy the current token from the DocSanctum web app (Settings → MCP Server → Remote access).';
+	}
+	return message;
+}
+
 export class DocSanctumClient {
 	private client: Client | null = null;
 	private connecting: Promise<Client> | null = null;
 
-	constructor(private serverUrl: string) {}
+	constructor(
+		private serverUrl: string,
+		private accessToken = '',
+	) {}
 
-	setServerUrl(serverUrl: string): void {
-		if (serverUrl === this.serverUrl) return;
+	setConnection(serverUrl: string, accessToken: string): void {
+		if (serverUrl === this.serverUrl && accessToken === this.accessToken) return;
 		this.serverUrl = serverUrl;
+		this.accessToken = accessToken;
 		this.disconnect();
 	}
 
@@ -90,9 +117,13 @@ export class DocSanctumClient {
 		if (this.client) return this.client;
 		if (!this.connecting) {
 			this.connecting = (async () => {
-				const transport = new StreamableHTTPClientTransport(
-					new URL(this.serverUrl),
-				);
+				// A token is only needed for DocSanctum's remote MCP port; the
+				// local port ignores the header, so sending it there is harmless.
+				const transport = new StreamableHTTPClientTransport(new URL(this.serverUrl), {
+					requestInit: this.accessToken
+						? { headers: { Authorization: `Bearer ${this.accessToken}` } }
+						: undefined,
+				});
 				const client = new Client({
 					name: 'doc-sanctum-obsidian',
 					version: '0.1.0',

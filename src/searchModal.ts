@@ -1,7 +1,7 @@
 import { App, Notice, SuggestModal } from 'obsidian';
 import DocSanctumPlugin from './main';
 import { DocumentModal } from './documentModal';
-import { DocSanctumWarning } from './mcpClient';
+import { DocSanctumWarning, describeConnectionError } from './mcpClient';
 
 interface ResultItem {
 	sourceId: string;
@@ -76,7 +76,7 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 				snippet: match.line,
 			}));
 		} catch (err) {
-			new Notice(`DocSanctum search failed — ${(err as Error).message}`);
+			new Notice(`DocSanctum search failed — ${describeConnectionError(err)}`);
 			return [];
 		}
 	}
@@ -110,7 +110,7 @@ export class DocSanctumSearchModal extends SuggestModal<ResultItem> {
 				doc.warning,
 			).open();
 		} catch (err) {
-			new Notice(`DocSanctum: failed to open document — ${(err as Error).message}`);
+			new Notice(`DocSanctum: failed to open document — ${describeConnectionError(err)}`);
 		}
 	}
 }
