@@ -26,13 +26,15 @@ const DOCSANCTUM_SEMANTIC_SEARCH_ICON = `${DOCSANCTUM_SEARCH_ICON}
 <text x="84" y="17" font-family="sans-serif" font-weight="700" font-size="44" text-anchor="middle" dominant-baseline="central" fill="currentColor">S</text>
 `;
 
+const ACCESS_TOKEN_SECRET_ID = 'doc-sanctum-access-token';
+
 export default class DocSanctumPlugin extends Plugin {
 	settings!: DocSanctumSettings;
 	client!: DocSanctumClient;
 
 	async onload() {
 		await this.loadSettings();
-		this.client = new DocSanctumClient(this.settings.serverUrl);
+		this.client = new DocSanctumClient(this.settings.serverUrl, this.getAccessToken());
 
 		addIcon('docsanctum-search', DOCSANCTUM_SEARCH_ICON);
 		addIcon('docsanctum-semantic-search', DOCSANCTUM_SEMANTIC_SEARCH_ICON);
@@ -78,5 +80,16 @@ export default class DocSanctumPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	// The token lives in Obsidian's keychain-backed secret storage rather
+	// than data.json, so it is not copied along when the vault is synced.
+	getAccessToken(): string {
+		return this.app.secretStorage.getSecret(ACCESS_TOKEN_SECRET_ID) ?? '';
+	}
+
+	setAccessToken(token: string): void {
+		this.app.secretStorage.setSecret(ACCESS_TOKEN_SECRET_ID, token);
+		this.client.setConnection(this.settings.serverUrl, token);
 	}
 }
