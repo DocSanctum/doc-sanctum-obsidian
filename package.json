@@ -1,6 +1,6 @@
 {
 	"name": "doc-sanctum-obsidian",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"description": "Search and browse your DocSanctum knowledge base via MCP.",
 	"main": "main.js",
 	"type": "module",
