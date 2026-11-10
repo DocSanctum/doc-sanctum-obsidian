@@ -97,6 +97,12 @@ export function describeConnectionError(err: unknown): string {
 	return message;
 }
 
+// MCP servers answer 404 to a request whose session ID they no longer know,
+// which is what every open session gets after the server restarts.
+function isSessionLost(err: unknown): boolean {
+	return err instanceof StreamableHTTPError && err.code === 404;
+}
+
 export class DocSanctumClient {
 	private client: Client | null = null;
 	private connecting: Promise<Client> | null = null;
@@ -185,6 +191,18 @@ export class DocSanctumClient {
 	}
 
 	private async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
+		try {
+			return await this.callToolOnce<T>(name, args);
+		} catch (err) {
+			if (!isSessionLost(err)) throw err;
+			// A restarted server forgets every MCP session, so start a new
+			// one and retry once instead of failing until Obsidian reloads.
+			this.disconnect();
+			return this.callToolOnce<T>(name, args);
+		}
+	}
+
+	private async callToolOnce<T>(name: string, args: Record<string, unknown>): Promise<T> {
 		const client = await this.connect();
 		const result = await client.callTool({ name, arguments: args });
 		return parseToolResult<T>(result);
